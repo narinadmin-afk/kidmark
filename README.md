@@ -1,146 +1,114 @@
-# Backend — ระบบ CRM (MySQL + Express)
+[npm-image]: https://img.shields.io/npm/v/mysql2.svg
+[npm-url]: https://npmjs.com/package/mysql2
+[node-version-image]: https://img.shields.io/node/v/mysql2.svg
+[node-version-url]: https://nodejs.org/en/download
+[downloads-image]: https://img.shields.io/npm/dm/mysql2.svg
+[downloads-url]: https://npmjs.com/package/mysql2
+[license-url]: https://github.com/sidorares/node-mysql2/blob/master/License
+[license-image]: https://img.shields.io/npm/l/mysql2.svg?maxAge=2592000
+[node-mysql]: https://github.com/mysqljs/mysql
+[mysqljs]: https://github.com/mysqljs
+[mysql-native]: https://github.com/sidorares/nodejs-mysql-native
+[sidorares]: https://github.com/sidorares
+[TooTallNate]: https://gist.github.com/TooTallNate
+[starttls.js]: https://gist.github.com/TooTallNate/848444
+[node-mariasql]: https://github.com/mscdex/node-mariasql
+[contributors]: https://github.com/sidorares/node-mysql2/graphs/contributors
+[contributing]: https://github.com/sidorares/node-mysql2/blob/master/Contributing.md
+[docs-base]: https://sidorares.github.io/node-mysql2/docs
+[docs-base-zh-CN]: https://sidorares.github.io/node-mysql2/zh-CN/docs
+[docs-base-pt-BR]: https://sidorares.github.io/node-mysql2/pt-BR/docs
+[docs-prepared-statements]: https://sidorares.github.io/node-mysql2/docs/documentation/prepared-statements
+[docs-mysql-server]: https://sidorares.github.io/node-mysql2/docs/documentation/mysql-server
+[docs-promise-wrapper]: https://sidorares.github.io/node-mysql2/docs/documentation/promise-wrapper
+[docs-authentication-switch]: https://sidorares.github.io/node-mysql2/docs/documentation/authentication-switch
+[docs-streams]: https://sidorares.github.io/node-mysql2/docs/documentation/extras
+[docs-typescript-docs]: https://sidorares.github.io/node-mysql2/docs/documentation/typescript-examples
+[docs-qs-pooling]: https://sidorares.github.io/node-mysql2/docs#using-connection-pools
+[docs-qs-first-query]: https://sidorares.github.io/node-mysql2/docs#first-query
+[docs-qs-using-prepared-statements]: https://sidorares.github.io/node-mysql2/docs#using-prepared-statements
+[docs-examples]: https://sidorares.github.io/node-mysql2/docs/examples
+[docs-faq]: https://sidorares.github.io/node-mysql2/docs/faq
+[docs-documentation]: https://sidorares.github.io/node-mysql2/docs/documentation
+[docs-contributing]: https://sidorares.github.io/node-mysql2/docs/contributing/website
+[coverage]: https://img.shields.io/codecov/c/github/sidorares/node-mysql2
+[coverage-url]: https://app.codecov.io/github/sidorares/node-mysql2
+[ci-url]: https://github.com/sidorares/node-mysql2/actions/workflows/ci-coverage.yml?query=branch%3Amaster
+[ci-image]: https://img.shields.io/github/actions/workflow/status/sidorares/node-mysql2/ci-coverage.yml?event=push&style=flat&label=CI&branch=master
 
-REST API สำหรับบันทึกข้อมูลลูกค้าลงฐานข้อมูล MySQL
-แยกจาก Frontend อย่างชัดเจน: ตัวอย่างฟอร์มอยู่ที่ [`../frontend/customer-form.html`](../frontend/customer-form.html)
+# MySQL2
 
-## โครงสร้างโปรเจกต์
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Node.js Version][node-version-image]][node-version-url]
+[![GitHub Workflow Status (with event)][ci-image]][ci-url]
+[![Codecov][coverage]][coverage-url]
+[![License][license-image]][license-url]
 
-```
-backend/
-├── config/
-│   ├── db.js            # เชื่อมต่อ MySQL (อ่านค่าจาก .env + Connection Pool)
-│   └── constants.js     # ค่าคงที่: สถานะลูกค้า, whitelist คอลัมน์, ข้อจำกัดความยาว
-├── controllers/
-│   └── customerController.js  # จัดการ Request/Response ของลูกค้า
-├── models/
-│   └── customerModel.js       # คำสั่ง SQL ทั้งหมด (Prepared Statements)
-├── routes/
-│   └── customerRoutes.js      # เส้นทาง API ทั้ง 6 เส้นทาง
-├── middleware/
-│   ├── validate.js            # ตรวจสอบข้อมูลก่อนบันทึก (Validation)
-│   └── errorHandler.js        # จัดการ Error กลาง (ไม่เปิดเผยรายละเอียด DB)
-├── sql/
-│   ├── schema.sql             # สคริปต์สร้าง Database + ตาราง customers
-│   └── init.js                # รัน schema.sql อัตโนมัติ (ไม่ต้องมี mysql client)
-├── .env.example               # แม่แบบ Environment Variables
-└── server.js                  # จุดเริ่มเซิร์ฟเวอร์ (Express)
-```
+[English][docs-base] | [简体中文][docs-base-zh-CN] | [Português (BR)][docs-base-pt-BR]
 
-## ขั้นตอนติดตั้ง
+> MySQL client for Node.js with focus on performance. Supports prepared statements, non-utf8 encodings, binary log protocol, compression, ssl [much more][docs-documentation].
 
-### 1. ติดตั้ง MySQL
+**Table of Contents**
 
-- **Windows**: ติดตั้งจาก [dev.mysql.com/downloads/installer](https://dev.mysql.com/downloads/installer/) หรือ XAMPP (มี MySQL มาให้)
-- **macOS**: `brew install mysql && brew services start mysql`
-- **Ubuntu/Debian**: `sudo apt install mysql-server && sudo systemctl start mysql`
+- [History and Why MySQL2](#history-and-why-mysql2)
+- [Installation](#installation)
+- [Documentation](#documentation)
+- [Acknowledgements](#acknowledgements)
+- [Contributing](#contributing)
 
-ตั้งรหัสผ่าน root ให้เรียบร้อย (หรือใช้ user อื่นที่มีสิทธิ์ CREATE DATABASE)
+## History and Why MySQL2
 
-### 2. ตั้งค่า Environment Variables
+MySQL2 project is a continuation of [MySQL-Native][mysql-native]. Protocol parser code was rewritten from scratch and api changed to match popular [Node MySQL][node-mysql]. MySQL2 team is working together with [Node MySQL][node-mysql] team to factor out shared code and move it under [mysqljs][mysqljs] organization.
 
-```bash
-cd backend
-cp .env.example .env     # Windows: copy .env.example .env
-```
+MySQL2 is mostly API compatible with [Node MySQL][node-mysql] and supports majority of features. MySQL2 also offers these additional features:
 
-แล้วแก้ `.env` ให้ตรงของจริง:
+- Faster / Better Performance
+- [Prepared Statements][docs-prepared-statements]
+- MySQL Binary Log Protocol
+- [MySQL Server][docs-mysql-server]
+- Extended support for Encoding and Collation
+- [Promise Wrapper][docs-promise-wrapper]
+- Compression
+- SSL and [Authentication Switch][docs-authentication-switch]
+- [Custom Streams][docs-streams]
+- [Pooling][docs-qs-pooling]
 
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password   # รหัสผ่าน MySQL ของคุณ
-DB_NAME=crm_customers       # ชื่อฐานข้อมูล (สร้างให้อัตโนมัติตอน step 3)
-DB_PORT=3306
-PORT=5000
-CLIENT_ORIGIN=              # เว้นว่าง = อนุญาตทุกแหล่ง (ตอนพัฒนา)
-```
+## Installation
 
-> **ความปลอดภัย**: ไฟล์ `.env` อยู่ใน `.gitignore` แล้ว — ห้าม commit รหัสผ่านลง git
-
-### 3. สร้าง Database และตาราง
-
-```bash
-npm run db:init
-```
-
-จะรัน `sql/schema.sql` ให้อัตโนมัติ (สร้างฐานข้อมูล `DB_NAME` + ตาราง `customers`)
-หรือจะนำเข้า `sql/schema.sql` ผ่าน MySQL Workbench / phpMyAdmin ก็ได้
-
-### 4. ติดตั้งแพ็กเกจและรัน
-
-```bash
-npm install
-npm start          # หรือ npm run dev (reload อัตโนมัติตอนแก้ไข)
-```
-
-เซิร์ฟเวอร์จะ**ตรวจการเชื่อมต่อ DB ก่อนเริ่ม** — ถ้าเชื่อมไม่ได้จะบอกสาเหตุแล้วหยุด
-
-### 5. เปิดฟอร์มตัวอย่าง
-
-เปิดไฟล์ `frontend/customer-form.html` ในเบราว์เซอร์ (เปิดตรง ๆ ได้เลย)
-แล้วกรอกข้อมูลทดสอบ — ถ้า backend รันอยู่ที่พอร์ต 5000 จะบันทึกลง MySQL ทันที
-
-## API ทั้งหมด
-
-| Method | Path | คำอธิบาย |
-|---|---|---|
-| GET | `/api/health` | ตรวจสถานะเซิร์ฟเวอร์ |
-| GET | `/api/customers` | ดึงข้อมูลทั้งหมด (`?search=คำค้น&status=สถานะ`) |
-| GET | `/api/customers/search?q=คำค้น` | ค้นหาลูกค้า |
-| GET | `/api/customers/:id` | ดึงข้อมูลรายบุคคล |
-| POST | `/api/customers` | เพิ่มลูกค้า |
-| PUT | `/api/customers/:id` | แก้ไขข้อมูลลูกค้า (ส่งเฉพาะฟิลด์ที่เปลี่ยนก็ได้) |
-| DELETE | `/api/customers/:id` | ลบลูกค้า |
-
-### รูปแบบ Response
-
-สำเร็จ:
-
-```json
-{ "success": true, "message": "บันทึกข้อมูลสำเร็จ", "data": { "id": 1, ... } }
-```
-
-Validation ไม่ผ่าน (400):
-
-```json
-{ "success": false, "message": "ข้อมูลไม่ถูกต้อง", "errors": { "email": "รูปแบบอีเมลไม่ถูกต้อง" } }
-```
-
-ผิดพลาดทั่วไป (404/500):
-
-```json
-{ "success": false, "message": "ไม่พบลูกค้าที่ระบุ" }
-```
-
-### ตัวอย่างเรียกด้วย curl
+MySQL2 is free from native bindings and can be installed on Linux, Mac OS or Windows without any issues.
 
 ```bash
-# เพิ่มลูกค้า
-curl -X POST http://localhost:5000/api/customers \
-  -H "Content-Type: application/json" \
-  -d '{"customer_code":"C-2001","first_name":"สมชาย","last_name":"ใจดี",
-       "phone":"081-234-5678","email":"somchai@example.com",
-       "company":"บริษัท ทดสอบ จำกัด","status":"Lead"}'
-
-# ค้นหา
-curl "http://localhost:5000/api/customers/search?q=สมชาย"
-
-# แก้ไข (ส่งเฉพาะฟิลด์ที่เปลี่ยน)
-curl -X PUT http://localhost:5000/api/customers/1 \
-  -H "Content-Type: application/json" \
-  -d '{"status":"เสนอราคา"}'
-
-# ลบ
-curl -X DELETE http://localhost:5000/api/customers/1
+npm install --save mysql2
 ```
 
-## มาตรการความปลอดภัย
+If you are using TypeScript, you will need to install `@types/node`.
 
-- **Prepared Statements ทุกจุด**: ค่าจากผู้ใช้ถูกส่งเป็น parameter (`?`) เสมอ — ไม่มี string
-  concatenation ใน SQL จึงป้องกัน SQL Injection (ชื่อคอลัมน์มาจาก whitelist เท่านั้น)
-- **Validation ก่อนบันทึก**: ตรวจรูปแบบ/ความยาว/ค่าที่อนุญาตก่อนถึง database
-- **ไม่เปิดเผยรายละเอียด DB**: error จาก MySQL ถูกแปลงเป็นข้อความไทยทั่วไป
-  รายละเอียดเต็ม (SQL, error code) บันทึกเฉพาะ log ฝั่งเซิร์ฟเวอร์
-- **ข้อมูลลับจาก `.env` เท่านั้น**: ไม่มีรหัสผ่าน hard-code ในโค้ด และ `.env` ไม่ถูก commit
-- **CORS**: จำกัดแหล่งที่เรียก API ได้ด้วย `CLIENT_ORIGIN` ใน `.env`
-- **จำกัดขนาด body**: `express.json({ limit: "100kb" })` กัน payload ขนาดเกินจำเป็น
+```bash
+npm install --save-dev @types/node
+```
+
+> For TypeScript documentation and examples, see [here][docs-typescript-docs].
+
+## Documentation
+
+- [Quickstart][docs-base]
+  - [First Query][docs-qs-first-query], [Using Prepared Statements][docs-qs-using-prepared-statements], [Using Connection Pools][docs-qs-pooling] and more.
+- [Documentation][docs-documentation]
+- [Examples][docs-examples]
+- [FAQ][docs-faq]
+
+## Acknowledgements
+
+- Internal protocol is written by [@sidorares][sidorares] [MySQL-Native][mysql-native].
+- Constants, SQL parameters interpolation, Pooling, `ConnectionConfig` class taken from [Node MySQL][node-mysql].
+- SSL upgrade code based on [@TooTallNate][TooTallNate] [code][starttls.js].
+- Secure connection / compressed connection api flags compatible to [MariaSQL][node-mariasql] client.
+- [Contributors][contributors].
+
+## Contributing
+
+Want to improve something in **MySQL2**?
+Please check [Contributing.md][contributing] for detailed instruction on how to get started.
+
+To contribute in **MySQL2 Documentation**, please visit the [Website Contributing Guidelines][docs-contributing] for detailed instruction on how to get started.
