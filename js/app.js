@@ -77,20 +77,6 @@ function bindSidebar() {
     toast("ออกจากระบบแล้ว", "success");
     go("#/login");
   });
-  $("#btn-reset").addEventListener("click", async () => {
-    const ok = await confirmDialog(
-      "การดำเนินการนี้จะลบข้อมูลทั้งหมดและแทนที่ด้วยข้อมูลตัวอย่าง ดำเนินการต่อหรือไม่?",
-      { danger: true, okText: "ล้างและเติมข้อมูลตัวอย่าง" }
-    );
-    if (!ok) return;
-    showLoading();
-    await store.reset();
-    await reload();
-    hideLoading();
-    toast("เติมข้อมูลตัวอย่างเรียบร้อย", "success");
-    route();
-  });
-
   const fileInput = $("#csv-file-input");
   fileInput.addEventListener("change", async () => {
     if (fileInput.files && fileInput.files[0]) await handleCsvFile(fileInput.files[0]);
@@ -110,7 +96,6 @@ function parseRoute() {
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "users") return { name: "users" };
   if (parts[0] === "login") return { name: "login" };
-  if (parts[0] === "register") return { name: "register" };
   return { name: "dashboard" };
 }
 
@@ -121,14 +106,14 @@ function perms() {
     return {
       loggedIn: true, role: "admin", offline: true, isAdmin: true, canWrite: true,
       canExport: true, canImport: true, canManageFields: true,
-      canManageUsers: false, canReset: true
+      canManageUsers: false
     };
   }
   return { offline: false, ...Auth.perms(state.user) };
 }
 
 function isAuthRoute() {
-  return state.route.name === "login" || state.route.name === "register";
+  return state.route.name === "login";
 }
 
 /** สิทธิ์แก้ไข/ลบรายระเบียน (ตรงกับฝั่งเซิร์ฟเวอร์, โหมดออฟไลน์ให้เต็มสิทธิ์) */
@@ -146,7 +131,7 @@ function route() {
   const p = perms();
   const apiMode = !!store && store.kind === "api";
 
-  /* --- ยามหน้า Login/Register --- */
+  /* --- ยามหน้า Login --- */
   if (apiMode && !p.loggedIn && !isAuthRoute()) { go("#/login"); return; }
   if (apiMode && p.loggedIn && isAuthRoute()) { go("#/dashboard"); return; }
 
@@ -187,8 +172,6 @@ function updateChrome() {
 
   const imp = $("#btn-import-side");
   if (imp) imp.hidden = !p.canImport;
-  const rst = $("#btn-reset");
-  if (rst) rst.hidden = !p.canReset;
 }
 
 function render() {
@@ -197,7 +180,6 @@ function render() {
   document.body.classList.toggle("auth-mode", isAuthRoute());
   switch (state.route.name) {
     case "login": main.append(viewLogin()); break;
-    case "register": main.append(viewRegister()); break;
     case "dashboard": main.append(viewDashboard()); break;
     case "records":
       main.append(viewRecords());
@@ -1011,18 +993,7 @@ function viewSettings() {
         h("div", { class: "card-body row" },
           h("button", { class: "btn", onclick: exportCsv }, "ส่งออก CSV ทั้งหมด"),
           perms().canImport ? h("button", { class: "btn", onclick: () => $("#csv-file-input").click() }, "นำเข้า CSV") : null,
-          h("button", { class: "btn", onclick: downloadTemplate }, "ดาวน์โหลดแม่แบบ CSV"),
-          perms().canReset ? h("button", {
-            class: "btn danger",
-            onclick: async () => {
-              const ok = await confirmDialog("ล้างข้อมูลทั้งหมดแล้วเติมข้อมูลตัวอย่างใหม่?", { danger: true, okText: "ยืนยัน" });
-              if (!ok) return;
-              await store.reset();
-              await reload();
-              toast("รีเซ็ตข้อมูลแล้ว", "success");
-              route();
-            }
-          }, "รีเซ็ตข้อมูลตัวอย่าง") : null
+          h("button", { class: "btn", onclick: downloadTemplate }, "ดาวน์โหลดแม่แบบ CSV")
         )
       )
     )
@@ -1263,7 +1234,7 @@ function authShell(title, sub, form, footerNote) {
     h("div", { class: "auth-card card" },
       h("div", { class: "auth-brand" },
         h("div", { class: "brand-mark" }, "C"),
-        h("div", {}, h("strong", {}, "CMR Base"), h("span", {}, "ระบบจัดการลูกค้า"))
+        h("div", {}, h("strong", {}, "Tarmtid.com"), h("span", {}, "ระบบจัดการลูกค้า"))
       ),
       h("h2", {}, title),
       p2(sub),
@@ -1319,65 +1290,7 @@ function viewLogin() {
     submit
   );
 
-  const hint = h("div", { class: "auth-hint", hidden: true });
-  apiFetch("GET", "/api/auth/setup").then((s) => {
-    if (!s.has_users) {
-      hint.hidden = false;
-      hint.textContent = "ยังไม่มีผู้ใช้ในระบบ — ไปที่หน้าสมัครสมาชิกเพื่อสร้างบัญชีผู้ดูแลระบบคนแรก";
-    }
-  }).catch(() => {});
-
-  return authShell("เข้าสู่ระบบ", "กรอกชื่อผู้ใช้และรหัสผ่านเพื่อใช้งานระบบ", form,
-    h("div", {}, hint, h("span", {}, "ยังไม่มีบัญชี? "), h("a", { href: "#/register" }, "สมัครสมาชิก")));
-}
-
-function viewRegister() {
-  const userInp = h("input", { type: "text", autocomplete: "username", placeholder: "a-z, 0-9, . _ - (3–32 ตัว)", required: true });
-  const nameInp = h("input", { type: "text", autocomplete: "name", placeholder: "ชื่อ-นามสกุล ที่ต้องการแสดง", required: true });
-  const emailInp = h("input", { type: "email", autocomplete: "email", placeholder: "name@example.com (ไม่บังคับ)" });
-  const passInp = h("input", { type: "password", autocomplete: "new-password", placeholder: "อย่างน้อย 6 ตัวอักษร", required: true });
-  const pass2Inp = h("input", { type: "password", autocomplete: "new-password", placeholder: "พิมพ์รหัสผ่านอีกครั้ง", required: true });
-  const err = authErrorBox();
-  const submit = h("button", { class: "btn primary block", type: "submit" }, "สมัครสมาชิก");
-
-  const form = h("form", { class: "auth-form", onsubmit: async (e) => {
-    e.preventDefault();
-    showAuthError(err, "");
-    const username = userInp.value.trim().toLowerCase();
-    const display_name = nameInp.value.trim();
-    const password = passInp.value;
-
-    if (!/^[a-z0-9._-]{3,32}$/.test(username)) { showAuthError(err, "ชื่อผู้ใช้ต้องเป็น a-z, 0-9, . _ - ความยาว 3–32 ตัว"); return; }
-    if (!display_name) { showAuthError(err, "กรุณากรอกชื่อที่แสดง"); return; }
-    if (password.length < 6) { showAuthError(err, "รหัสผ่านต้องอย่างน้อย 6 ตัวอักษร"); return; }
-    if (password !== pass2Inp.value) { showAuthError(err, "รหัสผ่านทั้งสองช่องไม่ตรงกัน"); return; }
-
-    submit.disabled = true;
-    try {
-      const data = await Auth.register({ username, display_name, email: emailInp.value.trim(), password });
-      state.user = data.user;
-      await loadData();
-      toast(data.first_admin
-        ? "สมัครสำเร็จ — คุณคือผู้ดูแลระบบคนแรกของระบบ"
-        : "สมัครสำเร็จ ยินดีต้อนรับ " + data.user.display_name, "success");
-      go("#/dashboard");
-    } catch (ex) {
-      showAuthError(err, ex.message);
-    } finally {
-      submit.disabled = false;
-    }
-  } },
-    authField("ชื่อผู้ใช้", userInp),
-    authField("ชื่อที่แสดง", nameInp),
-    authField("อีเมล", emailInp),
-    authField("รหัสผ่าน", passInp, "อย่างน้อย 6 ตัวอักษร"),
-    authField("ยืนยันรหัสผ่าน", pass2Inp),
-    err,
-    submit
-  );
-
-  return authShell("สมัครสมาชิก", "บัญชีแรกที่สมัครจะได้สิทธิ์ผู้ดูแลระบบอัตโนมัติ", form,
-    h("span", {}, "มีบัญชีอยู่แล้ว? ", h("a", { href: "#/login" }, "เข้าสู่ระบบ")));
+  return authShell("เข้าสู่ระบบ", "กรอกชื่อผู้ใช้และรหัสผ่านเพื่อใช้งานระบบ", form);
 }
 
 /* ================= users view (admin) ================= */

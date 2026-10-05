@@ -2,7 +2,7 @@
 
 เว็บแอปจัดการข้อมูลลูกค้า ออกแบบตามแนวคิดของ **kintone**: ข้อมูลอยู่ในรูป "ระเบียน" (Records)
 ที่ประกอบด้วย "ฟิลด์" (Fields) กำหนดเองได้, มีมุมมองหลายแบบ, ขั้นตอนการขาย, ความเคลื่อนไหวรายระเบียน,
-นำเข้า/ส่งออก CSV, **ระบบ Login/Register พร้อมกำหนดสิทธิ์ผู้ใช้ (admin / member / viewer)**
+นำเข้า/ส่งออก CSV, **ระบบ Login พร้อมกำหนดสิทธิ์ผู้ใช้ (admin / member / viewer)**
 และเปิดผ่าน REST API
 
 หน้าเว็บเป็นภาษาไทยทั้งหมด ไม่ใช้ framework ไม่ต้อง `npm install` (ไม่มี dependency ภายนอก)
@@ -21,8 +21,8 @@ node server.js        # หรือ npm start
 - ข้อมูลถูกเก็บลงฐานข้อมูล SQLite ที่ `data/cmr.sqlite` (ใช้ `node:sqlite` ที่มากับ Node ≥ 22.5)
 - อยากชี้ไปฐานข้อมูลอื่น (เช่น ตอนทดสอบ): `CMR_DB_FILE=data/other.sqlite node server.js`
 - ครั้งแรกที่รันจะเติมข้อมูลลูกค้าตัวอย่างภาษาไทยให้อัตโนมัติ 16 ระเบียน
-- **เปิดครั้งแรกต้องสมัครสมาชิกก่อน** — บัญชีแรกที่สมัครจะได้สิทธิ์ `admin` อัตโนมัติ
-  (ระบบจะแสดงคำแนะนำที่หน้า Login เอง)
+- **สร้างบัญชีแรกผ่าน API**: เมื่อยังไม่มีผู้ใช้ ให้เรียก `POST /api/auth/register`
+  (บัญชีแรกได้สิทธิ์ `admin` อัตโนมัติ) หลังจากนั้นเพิ่มผู้ใช้ต่อได้ในหน้า **จัดการผู้ใช้** — หน้าเว็บมีเฉพาะหน้าเข้าสู่ระบบ
 
 ### โหมดเก็บข้อมูล 2 แบบ (สลับได้)
 
@@ -66,13 +66,12 @@ node server.js        # หรือ npm start
 - นำเข้า CSV พร้อมหน้าตัวอย่าง 5 แถว และจับคู่คอลัมน์ด้วยชื่อฟิลด์อัตโนมัติ
 - ดาวน์โหลดแม่แบบ CSV
 
-**ข้อมูลตัวอย่าง**: ปุ่ม "ล้าง/เติมข้อมูลตัวอย่าง" ใน sidebar หรือปุ่มรีเซ็ตในหน้าตั้งค่า (admin เท่านั้น)
-
 ---
 
-## ผู้ใช้และสิทธิ์ (Login / Register)
+## ผู้ใช้และสิทธิ์ (Login)
 
-- **สมัครสมาชิก**: หน้า `#/register` — บัญชีแรกของระบบได้สิทธิ์ `admin` อัตโนมัติ บัญชีถัดไปเป็น `member`
+- **เพิ่มผู้ใช้**: ผ่านหน้า **จัดการผู้ใช้** (admin) หรือ API `POST /api/auth/register`
+  (บัญชีแรก = `admin`, บัญชีถัดไป = `member`) — หน้าเว็บไม่มีหน้าสมัครสมาชิก มีเฉพาะหน้าเข้าสู่ระบบ `#/login`
 - **เข้าสู่ระบบ**: หน้า `#/login` — รหัสผ่านเก็บเป็น hash ด้วย **scrypt + salt** (ไม่มีรหัสผ่านจริงในฐานข้อมูล)
 - **เซสชัน**: cookie `cmr_session` เป็น `HttpOnly` + `SameSite=Lax` อายุ 7 วัน (เก็บในตาราง `sessions`)
   - ยังรองรับ `Authorization: Bearer <token>` สำหรับเรียก API จากโปรแกรมอื่น
@@ -80,7 +79,7 @@ node server.js        # หรือ npm start
 - **บังคับทั้งฝั่่งเซิร์ฟเวอร์และฝั่ง UI**: ปุ่มที่ไม่มีสิทธิ์จะไม่ถูกแสดง และ endpoint ก็ยังตรวจซ้ำอีกชั้น
   (ทดสอบยืนยันแล้วว่าเรียกตรงด้วย curl ได้ 403)
 
-| บทบาท | ดู/ค้นหา/ส่งออก CSV | เพิ่มระเบียน | แก้ไข/เปลี่ยนสถานะ | ลบระเบียน | คอมเมนต์ | ตั้งค่าฟิลด์ / จัดการผู้ใช้ / รีเซ็ต |
+| บทบาท | ดู/ค้นหา/ส่งออก CSV | เพิ่มระเบียน | แก้ไข/เปลี่ยนสถานะ | ลบระเบียน | คอมเมนต์ | ตั้งค่าฟิลด์ / จัดการผู้ใช้ |
 |---|---|---|---|---|---|---|
 | **admin** (ผู้ดูแลระบบ) | ✔ | ✔ | ✔ ทุกฉบับ | ✔ ทุกฉบับ | ✔ | ✔ |
 | **member** (สมาชิก) | ✔ | ✔ | เฉพาะที่ตัวเองสร้าง หรือที่เป็น "ผู้รับผิดชอบ" | เฉพาะที่ตัวเองสร้าง | ✔ | ✘ |
@@ -96,8 +95,8 @@ node server.js        # หรือ npm start
 | Method | Path | สิทธิ์ | คำอธิบาย |
 |---|---|---|---|
 | GET | `/api/health` | สาธารณะ | ตรวจสถานะเซิร์ฟเวอร์ |
-| GET | `/api/auth/setup` | สาธารณะ | `has_users` — ใช้แสดงคำแนะนำหน้า Login |
-| POST | `/api/auth/register` | สาธารณะ | สมัคร `{ username, display_name, email, password }` (บัญชีแรก = admin) |
+| GET | `/api/auth/setup` | สาธารณะ | `has_users` — ใช้ตรวจว่ามีผู้ใช้ในระบบแล้วหรือยัง |
+| POST | `/api/auth/register` | สาธารณะ | สร้างผู้ใช้ `{ username, display_name, email, password }` (บัญชีแรก = admin) — เรียกผ่าน API เท่านั้น ไม่มีหน้าสมัครใน UI |
 | POST | `/api/auth/login` | สาธารณะ | เข้าสู่ระบบ `{ username, password }` → คืน cookie + user |
 | GET | `/api/auth/me` | สาธารณะ | คืน `{ user }` หรือ `{ user: null }` |
 | POST | `/api/auth/logout` | สมาชิก | ลบเซสชัน |
@@ -114,7 +113,7 @@ node server.js        # หรือ npm start
 | DELETE | `/api/records/:id` | member/admin* | ลบระเบียน (ตามตารางสิทธิ์ด้านบน) |
 | POST | `/api/records/:id/comments` | member/admin | เพิ่มคอมเมนต์ `{ text }` |
 | POST | `/api/records/:id/status` | member/admin* | เปลี่ยนสถานะ `{ status }` |
-| POST | `/api/reset` | admin | ล้างและเติมข้อมูลตัวอย่างใหม่ |
+| POST | `/api/reset` | admin | ล้างและเติมข้อมูลตัวอย่างใหม่ — เรียกผ่าน API เท่านั้น ไม่มีปุ่มใน UI |
 
 \* ต้องเป็นเจ้าของระเบียน (คนสร้าง) หรือ "ผู้รับผิดชอบ" เว้นแต่เป็น admin
 
@@ -142,9 +141,9 @@ index.html          โครงหน้าเว็บ (sidebar + จุดส
 css/app.css         สไตล์ทั้งหมด
 js/ui.js            helper สร้าง DOM, toast, modal, จัดรูปแบบวันที่/ตัวเลข
 js/csv.js           แปลง/สร้าง CSV (รองรับเครื่องหมายคำพูด ขึ้นบรรทัดใหม่ BOM)
-js/auth.js          apiFetch + Auth (login/register/logout/จัดการผู้ใช้) + ตรวจสอบสิทธิ์ฝั่ง UI
+js/auth.js          apiFetch + Auth (login/logout/จัดการผู้ใช้) + ตรวจสอบสิทธิ์ฝั่ง UI
 js/store.js         ชั้นเก็บข้อมูล: LocalStorageStore / ApiStore (เลือกอัตโนมัติ)
-js/app.js           router + ทุกมุมมอง (login, register, users, dashboard, records, kanban, detail, form, settings)
+js/app.js           router + ทุกมุมมอง (login, users, dashboard, records, kanban, detail, form, settings)
 shared/seed.js      schema เริ่มต้น + ข้อมูลตัวอย่าง (ใช้ร่วม browser/server)
 server.js           Node http server: เสิร์ฟไฟล์ + REST API + SQLite + auth/สิทธิ์
 tests/api.test.mjs        ชุดทดสอบ REST API (24 assertions)

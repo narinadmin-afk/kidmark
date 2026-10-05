@@ -1,8 +1,8 @@
 {
-  "name": "cmr-base",
+  "name": "tarmtid-crm",
   "version": "1.0.0",
   "private": true,
-  "description": "CMR Base — ระบบจัดการลูกค้า (CRM) คล้ายความสามารถของ kintone: ระเบียน, ฟิลด์กำหนดเอง, มุมมอง, ขั้นตอนการขาย, REST API",
+  "description": "Tarmtid.com — ระบบจัดการลูกค้า (CRM) คล้ายความสามารถของ kintone: ระเบียน, ฟิลด์กำหนดเอง, มุมมอง, ขั้นตอนการขาย, REST API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

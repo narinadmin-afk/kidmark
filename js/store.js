@@ -94,11 +94,6 @@ function createLocalStore() {
       });
       persist();
       return rec;
-    },
-    async reset() {
-      db = { schema: clone(CMRSeed.DEFAULT_SCHEMA), records: CMRSeed.makeRecords() };
-      persist();
-      return db;
     }
   };
 }
@@ -127,8 +122,7 @@ function createApiStore() {
     async updateRecord(id, values) { return req("PUT", "/api/records/" + encodeURIComponent(id), { values }); },
     async deleteRecord(id) { return req("DELETE", "/api/records/" + encodeURIComponent(id)); },
     async addComment(id, text) { return req("POST", "/api/records/" + encodeURIComponent(id) + "/comments", { text }); },
-    async setStatus(id, status) { return req("POST", "/api/records/" + encodeURIComponent(id) + "/status", { status }); },
-    async reset() { return req("POST", "/api/reset"); }
+    async setStatus(id, status) { return req("POST", "/api/records/" + encodeURIComponent(id) + "/status", { status }); }
   };
 }
 

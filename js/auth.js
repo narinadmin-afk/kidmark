@@ -1,7 +1,7 @@
 /* ============================================================
-   CRM Base — ระบบผู้ใช้/สิทธิ์ (ฝั่ง client)
+   CMR Base — ระบบผู้ใช้/สิทธิ์ (ฝั่ง client)
    - apiFetch: เรียก REST API พร้อมตรวจ 401 อัตโนมัติ
-   - Auth: me / login / register / logout / จัดการผู้ใช้
+   - Auth: me / login / logout / จัดการผู้ใช้
    - Auth.perms: แปลงบทบาทเป็นสิทธิ์สำหรับใช้ฝั่ง UI
    ============================================================ */
 
@@ -60,13 +60,6 @@ const Auth = {
     return data.user;
   },
 
-  /** บัญชีแรกที่สมัครจะได้ role = admin อัตโนมัติ */
-  async register({ username, display_name, email, password }) {
-    const data = await apiFetch("POST", "/api/auth/register", { username, display_name, email, password });
-    Auth.user = data.user;
-    return data;
-  },
-
   async logout() {
     try { await apiFetch("POST", "/api/auth/logout"); } catch { /* ไม่สำคัญ */ }
     Auth.user = null;
@@ -91,8 +84,7 @@ const Auth = {
       canExport: !!u,        // ทุกบทบาทดู/ส่งออกได้
       canImport: canWrite,
       canManageFields: isAdmin,
-      canManageUsers: isAdmin,
-      canReset: isAdmin
+      canManageUsers: isAdmin
     };
   },
 

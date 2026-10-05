@@ -16,7 +16,7 @@
     "กำลังเจรจา": "s-negotiate",
     "ปิดการขาย": "s-won",
     "ลูกค้าประจำ": "s-customer",
-    "เเพ้งาน": "s-lost"
+    "แพ้งาน": "s-lost"
   };
 
   const DEFAULT_SCHEMA = {

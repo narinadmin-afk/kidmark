@@ -708,11 +708,11 @@ server.on("error", (err) => {
 
 server.listen(PORT, () => {
   console.log("--------------------------------------------------");
-  console.log("  CMR Base พร้อมใช้งาน");
+  console.log("  Tarmtid.com พร้อมใช้งาน");
   console.log("  เปิดเบราว์เซอร์ที่  http://localhost:" + PORT);
   console.log("  ฐานข้อมูล SQLite ที่  " + path.relative(ROOT, DB_FILE));
   console.log(countUsers() === 0
-    ? "  ยังไม่มีผู้ใช้: บัญชีแรกที่สมัครจะได้สิทธิ์ผู้ดูแลระบบ"
+    ? "  ยังไม่มีผู้ใช้: สร้างบัญชีแรกผ่าน API POST /api/auth/register (บัญชีแรกได้สิทธิ์ admin)"
     : "  มีผู้ใช้ในระบบแล้ว " + countUsers() + " บัญชี");
   console.log("--------------------------------------------------");
 });
